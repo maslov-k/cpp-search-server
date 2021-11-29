@@ -1,4 +1,3 @@
-
 ostream& operator<<(ostream& out, const DocumentStatus& status) {
 	out << "Status: " << static_cast<int>(status);
 	return out;
@@ -52,6 +51,17 @@ void RunTestImpl(const F& func, const string& func_str) {
 #define RUN_TEST(func)  RunTestImpl((func), #func)
 
 
+void TestAddingDocuments() {
+	const int doc_id = 2;
+	const string content = "cat in the city"s;
+	const vector<int> ratings = { 1, 2, 3 };
+
+	SearchServer server;
+	server.AddDocument(doc_id, content, DocumentStatus::ACTUAL, ratings);
+	const auto found = server.FindTopDocuments("cat"s);
+	ASSERT_EQUAL(found.size(), 1u);
+}
+
 void TestExcludeStopWordsFromAddedDocumentContent() {
 	const int doc_id = 42;
 	const string content = "cat in the city"s;
@@ -60,7 +70,7 @@ void TestExcludeStopWordsFromAddedDocumentContent() {
 		SearchServer server;
 		server.AddDocument(doc_id, content, DocumentStatus::ACTUAL, ratings);
 		const auto found_docs = server.FindTopDocuments("in"s);
-		ASSERT_EQUAL(found_docs.size(), 1);
+		ASSERT_EQUAL(found_docs.size(), 1u);
 		const Document& doc0 = found_docs[0];
 		ASSERT_EQUAL(doc0.id, doc_id);
 	}
@@ -83,7 +93,7 @@ void TestMinusWords() {
 	server.AddDocument(doc_id, content1, DocumentStatus::ACTUAL, ratings);
 	server.AddDocument(doc_id + 1, content2, DocumentStatus::ACTUAL, ratings);
 	const auto found_docs = server.FindTopDocuments("in -the city"s);
-	ASSERT_EQUAL(found_docs.size(), 1);
+	ASSERT_EQUAL(found_docs.size(), 1u);
 }
 
 void TestMatching() {
@@ -101,8 +111,6 @@ void TestMatching() {
 
 	vector<string> words{ "city", "in" };
 	ASSERT_EQUAL(matched, words);
-
-
 }
 
 void TestSortByRelevance() {
@@ -121,7 +129,7 @@ void TestSortByRelevance() {
 void TestRating() {
 	SearchServer server;
 	server.AddDocument(0, "three five four"s, DocumentStatus::ACTUAL, { 7, 2, 7 });
-	ASSERT_EQUAL(server.FindTopDocuments("two three one"s)[0].rating, 5);
+	ASSERT_EQUAL(server.FindTopDocuments("two three one"s)[0].rating, (7 + 2 + 7) / 3);
 }
 
 void TestPredicate() {
@@ -129,8 +137,9 @@ void TestPredicate() {
 	server.AddDocument(0, "three five four"s, DocumentStatus::ACTUAL, { 7, 2, 7 });
 	server.AddDocument(1, "six seven five four"s, DocumentStatus::BANNED, { 17, 22, 7 });
 
-	vector<Document> found = server.FindTopDocuments("three five four"s, [](int document_id, DocumentStatus status, int rating) { return status == DocumentStatus::BANNED; });
-	ASSERT_EQUAL(found.size(), 1);
+	const auto predicate = [](int document_id, DocumentStatus status, int rating) { return status == DocumentStatus::BANNED; };
+	vector<Document> found = server.FindTopDocuments("three five four"s, predicate);
+	ASSERT_EQUAL(found.size(), 1u);
 	ASSERT_EQUAL(found[0].id, 1);
 }
 
@@ -140,7 +149,7 @@ void TestSearchByStatus() {
 	server.AddDocument(1, "six seven five four"s, DocumentStatus::BANNED, { 17, 22, 7 });
 
 	vector<Document> found = server.FindTopDocuments("three five four"s, DocumentStatus::BANNED);
-	ASSERT_EQUAL(found.size(), 1);
+	ASSERT_EQUAL(found.size(), 1u);
 	ASSERT_EQUAL(found[0].id, 1);
 }
 
@@ -149,12 +158,13 @@ void TestRelevanceComputing() {
 	server.AddDocument(0, "three five four"s, DocumentStatus::ACTUAL, { 7, 2, 7 });
 	server.AddDocument(1, "three eight nine"s, DocumentStatus::ACTUAL, { 6, 2, 7 });
 
-	double scale = 0.01;
-	double relevance = static_cast<int>(server.FindTopDocuments("three one four"s)[0].relevance / scale) * scale;
-	ASSERT_EQUAL(relevance, 0.23);
+	double relevance = server.FindTopDocuments("three one four"s)[0].relevance;
+	double relevanse0 = (log(2 / 2) / 3. + log(2) / 3);
+	ASSERT((relevance - relevanse0) < 1e6);
 }
 
 void TestSearchServer() {
+	RUN_TEST(TestAddingDocuments);
 	RUN_TEST(TestExcludeStopWordsFromAddedDocumentContent);
 	RUN_TEST(TestMinusWords);
 	RUN_TEST(TestMatching);
