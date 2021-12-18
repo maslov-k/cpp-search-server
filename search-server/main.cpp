@@ -113,23 +113,19 @@ private:
 	{
 		return none_of(word.begin(), word.end(), [](char c)
 			{
-			return c >= '\0' && c < ' ';
+				return c >= '\0' && c < ' ';
 			});
 	}
 
 	template <typename StringCollection>
 	static bool IsValidWordCollection(const StringCollection& words)
 	{
-		return none_of(words.begin(), words.end(), [](const string& word)
-			{
-				return !IsValidWord(word);
-			});
+		return all_of(words.begin(), words.end(), IsValidWord);
 	}
 
 	static bool IsValidQuery(const string& query)
 	{
 		return (query.find("--"s) == std::string::npos &&
-			query.find("- "s) == std::string::npos &&
 			query.back() != '-');
 	}
 
@@ -176,6 +172,10 @@ private:
 
 	QueryWord ParseQueryWord(string word) const
 	{
+		if (!IsValidQuery(word))
+		{
+			throw invalid_argument("invalid query");
+		}
 		if (!IsValidWord(word))
 		{
 			throw invalid_argument("invalid word: "s + word);
@@ -190,10 +190,6 @@ private:
 
 	Query ParseQuery(const string& query) const
 	{
-		if (!IsValidQuery(query))
-		{
-			throw invalid_argument("invalid query");
-		}
 		Query query_words;
 		for (const string& word : SplitIntoWordsNoStop(query))
 		{
