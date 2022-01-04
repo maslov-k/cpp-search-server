@@ -7,27 +7,26 @@
 
 const size_t MAX_RESULT_DOCUMENT_COUNT = 5;
 
-struct DocumentParams
-{
-	int rating;
-	DocumentStatus status;
-};
-
-struct QueryWord
-{
-	std::string word;
-	bool is_minus;
-};
-
-struct Query
-{
-	std::set<std::string> plus_words;
-	std::set<std::string> minus_words;
-};
-
 class SearchServer
 {
 private:
+	struct DocumentParams
+	{
+		int rating;
+		DocumentStatus status;
+	};
+
+	struct QueryWord
+	{
+		std::string word;
+		bool is_minus;
+	};
+
+	struct Query
+	{
+		std::set<std::string> plus_words;
+		std::set<std::string> minus_words;
+	};
 
 	std::map<std::string, std::map<int, double>> word_to_documents_freqs_;
 	std::set<std::string> stop_words_;

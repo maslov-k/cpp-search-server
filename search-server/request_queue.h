@@ -5,15 +5,15 @@
 #include <vector>
 #include <string>
 
-struct QueryResult
-{
-	bool is_empty;
-	int request_time;
-};
-
 class RequestQueue
 {
 private:
+	struct QueryResult
+	{
+		bool is_empty;
+		int request_time;
+	};
+
 	std::deque<QueryResult> requests_;
 	const static int min_in_day_ = 1440;
 	const SearchServer& search_server_;

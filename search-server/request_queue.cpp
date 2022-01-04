@@ -1,7 +1,8 @@
 #include "request_queue.h"
 
+using namespace std;
 
-void RequestQueue::AddResponseToDeque(const std::vector<Document>& response)
+void RequestQueue::AddResponseToDeque(const vector<Document>& response)
 {
 	++current_time_;
 	QueryResult query_result;
@@ -27,16 +28,16 @@ RequestQueue::RequestQueue(const SearchServer& search_server)
 {
 }
 
-std::vector<Document> RequestQueue::AddFindRequest(const std::string& raw_query, DocumentStatus status)
+vector<Document> RequestQueue::AddFindRequest(const string& raw_query, DocumentStatus status)
 {
-	const std::vector<Document> response = search_server_.FindTopDocuments(raw_query, status);
+	const vector<Document> response = search_server_.FindTopDocuments(raw_query, status);
 	AddResponseToDeque(response);
 	return response;
 }
 
-std::vector<Document> RequestQueue::AddFindRequest(const std::string& raw_query)
+vector<Document> RequestQueue::AddFindRequest(const string& raw_query)
 {
-	const std::vector<Document> response = search_server_.FindTopDocuments(raw_query);
+	const vector<Document> response = search_server_.FindTopDocuments(raw_query);
 	AddResponseToDeque(response);
 	return response;
 }
