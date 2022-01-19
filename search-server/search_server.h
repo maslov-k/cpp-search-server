@@ -6,8 +6,6 @@
 #include <vector>
 #include <set>
 
-using namespace std::string_literals;
-
 const size_t MAX_RESULT_DOCUMENT_COUNT = 5;
 
 class SearchServer
@@ -42,9 +40,6 @@ private:
 
 	static bool IsValidWord(const std::string& word);
 
-	template <typename StringCollection>
-	static bool IsValidWordCollection(const StringCollection& words);
-
 	static bool IsValidQuery(const std::string& query);
 
 	bool IsStopWord(const std::string& word) const;
@@ -57,8 +52,6 @@ private:
 	QueryWord ParseQueryWord(std::string word) const;
 
 	Query ParseQuery(const std::string& query) const;
-
-	static void SortAndResizeTopDocuments(std::vector<Document>& matched_documents, const size_t max_count);
 
 	double ComputeWordIDF(const std::string& word) const;
 
@@ -95,11 +88,36 @@ public:
 	std::tuple<std::vector<std::string>, DocumentStatus> MatchDocument(const std::string& raw_query, int document_id) const;
 };
 
+template <typename StringCollection>
+void SearchServer::SetStopWords(const StringCollection& stop_words)
+{
+	for (const std::string& word : stop_words)
+	{
+		if (!word.empty())
+		{
+			stop_words_.insert(word);
+		}
+	}
+}
+
 template <typename DocumentsFilter>
 std::vector<Document> SearchServer::FindTopDocuments(const std::string& query, DocumentsFilter documents_filter) const
 {
 	std::vector<Document> result = FindAllDocuments(query, documents_filter);
-	SortAndResizeTopDocuments(result, MAX_RESULT_DOCUMENT_COUNT);
+	
+	sort(
+		result.begin(),
+		result.end(),
+		[](const Document& a, const Document& b)
+		{
+			return ((a.relevance - b.relevance) > 1e-6) || ((abs(a.relevance - b.relevance) < 1e-6) && (a.rating > b.rating));
+		}
+	);
+	if (result.size() > MAX_RESULT_DOCUMENT_COUNT)
+	{
+		result.resize(MAX_RESULT_DOCUMENT_COUNT);
+	}
+
 	return result;
 }
 

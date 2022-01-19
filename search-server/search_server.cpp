@@ -22,14 +22,6 @@ bool SearchServer::IsValidWord(const string& word)
 		});
 }
 
-template <typename StringCollection>
-bool SearchServer::IsValidWordCollection(const StringCollection& words)
-{
-	return all_of(words.begin(), words.end(), IsValidWord);
-}
-template bool SearchServer::IsValidWordCollection<vector<string>>(const vector<string>& words);
-template bool SearchServer::IsValidWordCollection<set<string>>(const set<string>& words);
-
 bool SearchServer::IsValidQuery(const string& query)
 {
 	return (query.find("--"s) == string::npos &&
@@ -53,20 +45,6 @@ vector<string> SearchServer::SplitIntoWordsNoStop(const string& text) const
 	}
 	return words;
 }
-
-template <typename StringCollection>
-void SearchServer::SetStopWords(const StringCollection& stop_words)
-{
-	for (const string& word : stop_words)
-	{
-		if (!word.empty())
-		{
-			stop_words_.insert(word);
-		}
-	}
-}
-template void SearchServer::SetStopWords<vector<string>>(const vector<string>& stop_words);
-template void SearchServer::SetStopWords<set<string>>(const set<string>& stop_words);
 
 SearchServer::QueryWord SearchServer::ParseQueryWord(string word) const
 {
@@ -104,22 +82,6 @@ SearchServer::Query SearchServer::ParseQuery(const string& query) const
 	return query_words;
 }
 
-void SearchServer::SortAndResizeTopDocuments(vector<Document>& matched_documents, const size_t max_count)
-{
-	sort(
-		matched_documents.begin(),
-		matched_documents.end(),
-		[](const Document& a, const Document& b)
-		{
-			return ((a.relevance - b.relevance) > 1e-6) || ((abs(a.relevance - b.relevance) < 1e-6) && (a.rating > b.rating));
-		}
-	);
-	if (matched_documents.size() > max_count)
-	{
-		matched_documents.resize(max_count);
-	}
-}
-
 double SearchServer::ComputeWordIDF(const string& word) const
 {
 	return log(static_cast<double>(GetDocumentCount()) / word_to_documents_freqs_.at(word).size());
@@ -130,7 +92,7 @@ SearchServer::SearchServer() = default;
 template <typename StringCollection>
 SearchServer::SearchServer(const StringCollection & stop_words)
 {
-	if (!IsValidWordCollection(stop_words))
+	if (!all_of(stop_words.begin(), stop_words.end(), IsValidWord))
 	{
 		throw invalid_argument("invalid characters");
 	}
@@ -198,9 +160,9 @@ void SearchServer::RemoveDocument(int document_id)
 	docs_ids_.erase(document_id);
 
 	vector<string> words_to_remove;
-	for (auto [word, m] : word_to_documents_freqs_)
+	for (auto& [word, docs_freqs] : word_to_documents_freqs_)
 	{
-		m.erase(document_id);
+		docs_freqs.erase(document_id);
 		if (word.empty())
 		{
 			words_to_remove.push_back(word);

@@ -29,12 +29,15 @@ public:
 	std::vector<Document> AddFindRequest(const std::string& raw_query);
 
 	template <typename DocumentsFilter>
-	std::vector<Document> AddFindRequest(const std::string& raw_query, DocumentsFilter document_filter)
-	{
-		const std::vector<Document> response = search_server_.FindTopDocuments(raw_query, document_filter);
-		AddResponseToDeque(response);
-		return response;
-	}
+	std::vector<Document> AddFindRequest(const std::string& raw_query, DocumentsFilter document_filter);
 
 	int GetNoResultRequests() const;
 };
+
+template <typename DocumentsFilter>
+std::vector<Document> RequestQueue::AddFindRequest(const std::string& raw_query, DocumentsFilter document_filter)
+{
+	const std::vector<Document> response = search_server_.FindTopDocuments(raw_query, document_filter);
+	AddResponseToDeque(response);
+	return response;
+}
