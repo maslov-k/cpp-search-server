@@ -17,3 +17,4 @@ ostream& operator<<(ostream& output, const Document& document)
 		<< " }"s;
 	return output;
 }
+

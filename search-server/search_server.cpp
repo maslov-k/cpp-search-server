@@ -1,6 +1,7 @@
 #include "search_server.h"
 #include "string_processing.h"
 #include "document.h"
+#include "log_duration.h"
 #include <algorithm>
 #include <execution>
 #include <stdexcept>
@@ -149,9 +150,27 @@ int SearchServer::GetDocumentCount() const
 	return documents_.size();
 }
 
-int SearchServer::GetDocumentId(int index) const
+set<int>::const_iterator SearchServer::begin() const
 {
-	return docs_id_order_.at(index);
+	return docs_ids_.cbegin();
+}
+
+set<int>::const_iterator SearchServer::end() const
+{
+	return docs_ids_.cend();
+}
+
+const map<string, double>& SearchServer::GetWordFrequencies(int document_id) const
+{
+	if (document_to_words_freqs_.find(document_id) == document_to_words_freqs_.end())
+	{
+		static const map<string, double> dummy;
+		return dummy;
+	}
+	else
+	{
+		return document_to_words_freqs_.at(document_id);
+	}
 }
 
 void SearchServer::AddDocument(int document_id, const string& document, DocumentStatus status, const vector<int>& ratings)
@@ -165,10 +184,32 @@ void SearchServer::AddDocument(int document_id, const string& document, Document
 	for (const string& word : document_words)
 	{
 		word_to_documents_freqs_[word][document_id] += 1. / document_size;
+		document_to_words_freqs_[document_id][word] += 1. / document_size;
 	}
 
 	documents_.emplace(document_id, DocumentParams{ ComputeAverageRating(ratings), status });
-	docs_id_order_.push_back(document_id);
+	docs_ids_.insert(document_id);
+}
+
+void SearchServer::RemoveDocument(int document_id)
+{
+	document_to_words_freqs_.erase(document_id);
+	documents_.erase(document_id);
+	docs_ids_.erase(document_id);
+
+	vector<string> words_to_remove;
+	for (auto [word, m] : word_to_documents_freqs_)
+	{
+		m.erase(document_id);
+		if (word.empty())
+		{
+			words_to_remove.push_back(word);
+		}
+	}
+	for (const string& word : words_to_remove)
+	{
+		word_to_documents_freqs_.erase(word);
+	}
 }
 
 vector<Document> SearchServer::FindTopDocuments(const string& query) const
@@ -187,6 +228,10 @@ tuple<vector<string>, DocumentStatus> SearchServer::MatchDocument(const string& 
 	Query query_words = ParseQuery(raw_query);
 	for (const string& word : query_words.minus_words)
 	{
+		if (word_to_documents_freqs_.find(word) == word_to_documents_freqs_.end())
+		{
+			continue;
+		}
 		if (word_to_documents_freqs_.at(word).count(document_id))
 		{
 			return tuple{ vector<string>(), documents_.at(document_id).status };
@@ -194,6 +239,10 @@ tuple<vector<string>, DocumentStatus> SearchServer::MatchDocument(const string& 
 	}
 	for (const string& word : query_words.plus_words)
 	{
+		if (word_to_documents_freqs_.find(word) == word_to_documents_freqs_.end())
+		{
+			continue;
+		}
 		if (word_to_documents_freqs_.at(word).count(document_id) && !count(matched_words.begin(), matched_words.end(), word))
 		{
 			matched_words.push_back(word);
