@@ -1,12 +1,10 @@
 #include "search_server.h"
 #include "test_example_functions.h"
 #include "document.h"
-#include <vector>
-#include <string>
 
 using namespace std;
 
-void AddDocument(SearchServer& search_server, int document_id, const string& document, DocumentStatus status,
+void AddDocument(SearchServer& search_server, int document_id, string_view document, DocumentStatus status,
     const vector<int>& ratings)
 {
     try
@@ -19,7 +17,7 @@ void AddDocument(SearchServer& search_server, int document_id, const string& doc
     }
 }
 
-void FindTopDocuments(const SearchServer& search_server, const string& raw_query)
+void FindTopDocuments(const SearchServer& search_server, string_view raw_query)
 {
     cout << "Результаты поиска по запросу: "s << raw_query << endl;
     try
@@ -35,20 +33,20 @@ void FindTopDocuments(const SearchServer& search_server, const string& raw_query
     }
 }
 
-void PrintMatchDocumentResult(int document_id, const vector<string>& words, DocumentStatus status)
+void PrintMatchDocumentResult(int document_id, const vector<string_view>& words, DocumentStatus status)
 {
     cout << "{ "s
         << "document_id = "s << document_id << ", "s
         << "status = "s << static_cast<int>(status) << ", "s
         << "words ="s;
-    for (const string& word : words)
+    for (string_view word : words)
     {
         cout << ' ' << word;
     }
     cout << "}"s << endl;
 }
 
-void MatchDocuments(const SearchServer& search_server, const string& query)
+void MatchDocuments(const SearchServer& search_server, string_view query)
 {
     try
     {
