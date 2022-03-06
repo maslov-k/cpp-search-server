@@ -151,12 +151,13 @@ std::vector<Document> SearchServer::FindTopDocuments(ExecutionPolicy&& policy, s
 {
 	std::vector<Document> result = FindAllDocuments(policy, query, documents_filter);
 	
+	const double epsilon = 1e-6;
 	sort(policy,
 		result.begin(),
 		result.end(),
-		[](const Document& a, const Document& b)
+		[epsilon](const Document& a, const Document& b)
 		{
-			if (std::abs(a.relevance - b.relevance) < 1e-6)
+			if (std::abs(a.relevance - b.relevance) < epsilon)
 			{
 				return a.rating > b.rating;
 			}
