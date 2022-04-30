@@ -31,7 +31,10 @@
 *.out
 *.app
 
+# VS
 *.sln
 *.vcxproj*
 */.*
 */Debug
+*/Release
+*/x64
